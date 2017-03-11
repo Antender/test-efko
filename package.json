@@ -1,0 +1,23 @@
+{
+  "name": "test-efko",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Antender/test-efko.git"
+  },
+  "author": "Anton Volokitin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Antender/test-efko/issues"
+  },
+  "homepage": "https://github.com/Antender/test-efko#readme",
+  "dependencies": {
+    "express": "^4.15.2",
+    "promise-mysql": "^3.0.0"
+  }
+}
