@@ -87,9 +87,13 @@ function updateSolution(field, permission) {
             return
         }
         checkAuthorization(req, resp, permission, function() {
-            connection.query('UPDATE Solutions SET ' + field + ' = ? WHERE SolutionID = ?',[req.body[field], req.body.solutionid])
+            return connection.query('UPDATE Solutions SET ' + field + '=? WHERE SolutionID = ?',[req.body[field] + "", req.body.solutionid])
             .then(function(results, fields) {
-                resp.sendStatus(200)
+                if (results.affectedRows > 0) {
+                    resp.sendStatus(200)
+                } else {
+                    resp.sendStatus(404)
+                }
             },function(e){
                 resp.sendStatus(404)
             })
@@ -103,16 +107,32 @@ function getData(req, resp) {
         return
     }
     checkAuthorization(req, resp, 'TRUE', function (e) {
+        var rows
         connection.query('SELECT * FROM Solutions')
         .then(function(results, fields) {
-            resp.json(results.map(function(row) {
+            rows = results.map(function(row) {
                 return {
                     'solutionid' : row.SolutionID,
                     'problemText' : row.ProblemText,
                     'solutionText' : row.SolutionText,
                     'solutionScore' : row.SolutionScore
                 }
-            }))
+            })
+            return connection.query('SELECT canSolve, canReview FROM Users WHERE UserID = ? LIMIT 1',[req.session.userid]) 
+        })
+        .then(function(results, fields) {
+            if (results.length > 0) {
+                resp.json({
+                    canSolve : results[0].canSolve,
+                    canReview : results[0].canReview,
+                    rows : rows
+                })
+            } else {
+                resp.sendStatus(404)
+            }
+        })
+        .catch(function(e) {
+            resp.sendStatus(404)
         })
     })
 }
@@ -156,9 +176,9 @@ PRIMARY KEY (SolutionID), ProblemText TEXT, SolutionText TEXT, SolutionScore TIN
         app.get('/logout', logout)
         app.post('/createUser', createUser)
         app.get('/addProblem', addProblem)
-        app.post('/updateSolutionText', updateSolution('solutionText','canSolve'))
-        app.post('/updateProblemText',updateSolution('problemText','canSolve'))
-        app.post('/updateSolutionScore',updateSolution('solutionScore','canReview'))
+        app.post('/update_solutionText', updateSolution('solutionText','canSolve'))
+        app.post('/update_problemText',updateSolution('problemText','canSolve'))
+        app.post('/update_solutionScore',updateSolution('solutionScore','canReview'))
         app.get('/getData',getData)
         return callback(connection)
     }, function(e){
