@@ -1,0 +1,19 @@
+.cell {
+     text-align: center;
+}
+
+.starcontainer {
+    min-width: 6em;
+}
+
+img.star {
+    max-height: 1em;
+}
+
+.half {
+    width : 46%;
+}
+
+.max {
+    width : 100%;
+}

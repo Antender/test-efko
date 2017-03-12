@@ -6,15 +6,21 @@ var CreateUserDialog = {
     message : false,
     disabled : undefined,
     view : function(vnode) {
-        return m('div',[
+        self = this
+        return m('div[style="display:flex;flex-direction:column;max-width:20%;"]',[
+             m('h3','Регистрация'),
              m('label','Имя пользователя'),
              m('input[type=text]', {onchange : m.withAttr('value', function(v) { vnode.state.username = v }), value : this.username}),
              m('label','Пароль'),
              m('input[type=password]', {onchange : m.withAttr('value', function(v) { vnode.state.password = v}), value : this.password}),
-             m('label','Может создавать и редактировать проблемы и решения'),
-             m('input[type=checkbox]', {onchange : m.withAttr('checked', function(v) { vnode.state.canSolve = !!v }), checked : this.canSolve ? true : undefined}),
-             m('label','Может оценивать решения'),
-             m('input[type=checkbox]', {onchange : m.withAttr('checked', function(v) { vnode.state.canReview = !!v}), checked : this.canReview ? true : undefined}),
+             m('div',
+                m('label','Может создавать и редактировать проблемы и решения'),
+                m('input[type=checkbox]', {onchange : m.withAttr('checked', function(v) { vnode.state.canSolve = v }), checked : this.canSolve ? true : undefined})
+             ),
+             m('div',
+                m('label', 'Может оценивать решения'),
+                m('input[type=checkbox]', {onchange : m.withAttr('checked', function(v) { vnode.state.canReview = v}), checked : this.canReview ? true : undefined})
+             ),
              m('button[type=button]', {onclick : this.submit.bind(this), disabled : this.disabled}, 'Создать пользователя'),
              m('div',this.message)
         ])
@@ -49,7 +55,8 @@ var LoginDialog = {
     message : "",
     disabled : undefined,
     view : function(vnode) {
-        return m('div',[
+        return m('div[style="display:flex;flex-direction:column;max-width:20%;"]',[
+             m('h3','Вход'),
              m('label','Имя пользователя'),
              m('input[type=text]', {onchange : m.withAttr('value', function (v) { vnode.state.username = v }), value : this.username}),
              m('label','Пароль'),
@@ -83,7 +90,7 @@ var LoginDialog = {
 var Table = {
     view : function(vnode) {
         var id = 0
-        return m('table',
+        return m('table.max',
             m('tr',[
                 m('th','Проблема'),
                 m('th','Решение'),
@@ -106,21 +113,21 @@ var TableRow = {
             solutionText : false,
             solutionScore : false
         }
-        return m('tr', { key : vnode.attrs.rowid} ,[
-            m('td',m('input', { 
+        return m('tr.max', { key : vnode.attrs.rowid} ,[
+            m('td.half.cell',m('input.max', { 
                 onchange : m.withAttr('value', this.update.bind(this,'problemText')), 
                 disabled : !model.canSolve || this.disabled.problemText, 
                 value : model.table[this.rowid].problemText
             })),
-            m('td',m('input', { 
+            m('td.half.cell',m('input.max', { 
                 onchange : m.withAttr('value', this.update.bind(this,'solutionText')), 
                 disabled : !model.canSolve ||this.disabled.solutionText, 
                 value : model.table[this.rowid].solutionText
             })),
-            m('td',m('input', { 
-                onchange : m.withAttr('value', this.update.bind(this,'solutionScore')), 
-                disabled : !model.canReview ||this.disabled.solutionScore, 
-                value : model.table[this.rowid].solutionScore
+            m('td.cell',m(StarBar,{ 
+                score : model.table[this.rowid].solutionScore,
+                update : this.update,
+                parent : this
             })),
         ])
     },
@@ -148,6 +155,21 @@ var TableRow = {
     }
 }
 
+var StarBar = {
+    score : 1,
+    update : function() {},
+    view : function(vnode) {
+        score = vnode.attrs.score
+        update = vnode.attrs.update
+        return m('div.starcontainer', [1,2,3,4,5].map(function(id) {
+            return m('img.star',{
+                src : id > score ? '/star-unchecked.gif' : '/star-checked.gif',
+                onclick : this.update.bind(vnode.attrs.parent,'solutionScore',id)
+            })
+        }))
+    }
+}
+
 var model = {
     getData : function() {
         m.request('/getData')
@@ -164,10 +186,23 @@ var model = {
         m.request({
             url : '/logout',
             deserialize: function(value) {return value}
-        },)
+        })
         .then(function(e) {
             model.table = []
             model.page = 0
+        })
+    },
+    addProblem : function(v) {
+        m.request({
+            url : 'addProblem'
+        })
+        .then(function(e) {
+            model.table.push({
+                solutionid : e,
+                problemText : "",
+                solutionText : "",
+                solutionScore : 1
+            })
         })
     },
     table : [],
@@ -187,7 +222,8 @@ var Page = {
             case 1:
                 return m('div',[
                     m('button[type=button]', { onclick : model.logout }, 'Выйти'),
-                    m(Table)
+                    m(Table),
+                    m('button[type=button]', { onclick : model.addProblem}, 'Новая проблема')
                 ])
         }
     }
